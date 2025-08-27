@@ -1,6 +1,7 @@
 import sqlite3
 import numpy as np
 import os
+from datetime import datetime
 
 DB_NAME = os.path.join(os.path.dirname(__file__), "faces.db")
 
@@ -30,6 +31,16 @@ def create_table():
     )
     """)
     
+    # ✅ Attendance table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS attendance (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        date TEXT,
+        time TEXT
+    )
+    """)
+    
     conn.commit()
     conn.close()
 
@@ -56,6 +67,25 @@ def get_all_faces():
     conn.close()
     return results
 
+# ✅ Attendance functions
+def mark_attendance(name):
+    conn = connect_db()
+    cursor = conn.cursor()
+    today = datetime.now().strftime("%Y-%m-%d")
+    
+    cursor.execute("SELECT * FROM attendance WHERE name=? AND date=?", (name, today))
+    result = cursor.fetchone()
+    
+    if result is None:
+        current_time = datetime.now().strftime("%H:%M:%S")
+        cursor.execute("INSERT INTO attendance (name, date, time) VALUES (?, ?, ?)", (name, today, current_time))
+        conn.commit()
+        conn.close()
+        return current_time
+    else:
+        conn.close()
+        return None
+
 # Payroll functions
 def update_deduction(name, deduction):
     conn = connect_db()
@@ -63,9 +93,9 @@ def update_deduction(name, deduction):
     cursor.execute("""
         UPDATE payroll 
         SET deductions = deductions + ?, 
-            net_salary = base_salary - (deductions + ?) 
+            net_salary = base_salary - deductions 
         WHERE name = ?
-    """, (deduction, 0, name))
+    """, (deduction, name))
     conn.commit()
     conn.close()
 
@@ -76,9 +106,9 @@ def mark_absent(name):
     cursor.execute("""
         UPDATE payroll 
         SET deductions = deductions + ?, 
-            net_salary = base_salary - (deductions + ?) 
+            net_salary = base_salary - deductions 
         WHERE name = ?
-    """, (daily_salary, 0, name))
+    """, (daily_salary, name))
     conn.commit()
     conn.close()
 

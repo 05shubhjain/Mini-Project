@@ -102,7 +102,7 @@ def update_deduction(name, deduction):
 def mark_absent(name):
     conn = connect_db()
     cursor = conn.cursor()
-    daily_salary = 60000 / 30  # assuming 30 days in month
+    daily_salary = 60000 / 30  
     cursor.execute("""
         UPDATE payroll 
         SET deductions = deductions + ?, 
